@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>秋田県　県民割クーポン利用可能施設検索システム（非公式）</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans" rel="stylesheet">
+    <link rel="stylesheet" href="https://jenil.github.io/bulmaswatch/default/bulmaswatch.min.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"
+        integrity="sha512-rKFvwjvE4liWPlFnvH4ZhRDfNZ9FOpdkD/BU5gAIA3VS3vOQrQ5BjKgbO3kxebKhHdHcNUHLqxQYSoxee9UwgA=="
+        crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://unpkg.com/bulma@0.7.5/css/bulma.min.css" />
+    <link rel="stylesheet" href="css/main.css" />
+
+    <!--スマホ用CSS-->
+    <link rel="stylesheet" href="css/main_sp.css" media="(max-width: 1022px)"/>
+</head>
+
+<body>
+    <section class="hero is-fullheight is-default is-bold">
+        <div id="app">
+            <div class="hero-head">
+                <nav class="navbar">
+
+                    <div class="container">
+                        <div class="navbar-brand">
+                            <a class="navbar-item" href="../">
+                                <i style="color: slategrey" aria-hidden="true" class="fa fa-th fa-rotate-90"></i>
+                                <p style="padding-left:5px">秋田県　県民割クーポン利用可能施設検索システム（非公式）<br>地域限定クーポン取扱店舗：6月25日現在<br>宿泊施設・旅行会社：6月30日現在</p>
+                                <p style="padding-left:5px"></p>
+                            </a>
+
+                            <span class="navbar-burger burger" data-target="navbarMenu"
+                                @click="isMenuOpen = !isMenuOpen" v-bind:class="{'is-active': isMenuOpen}">
+                                <span></span>
+                                <span></span>
+                                <span></span>
+                            </span>
+                        </div>
+                        <div id="navbarMenu" class="navbar-menu" v-bind:class="{'is-active': isMenuOpen}">
+                            <div class="navbar-end">
+                               <!-- 
+                                   <span class="navbar-item">
+                                    <a class="button is-outlined">
+                                        <span class="icon">
+                                            <i class="fa fa-upload" aria-hidden="true"></i>
+                                        </span>
+                                        <span>Import</span>
+                                        <input style="cursor: hand" class="file-input" @change="OpenDialog" type="file"
+                                            accept=".csv">
+                                    </a>
+                                -->
+                                </span>
+                                <span class="navbar-item" style="background-color: bisque!important;">    
+                                    <a class="button is-outlined">
+                                        <span class="icon">
+                                            <i class="fa fa-th fa-rotate-90" aria-hidden="true"></i>
+                                        </span>
+                                        <span>公式Web</span>
+                                        <input style="cursor: hand" class="file-input" onclick="location.href='https://aki-wari.com/'">
+                                    </a>
+                               </span>
+                                <span class="navbar-item" style="background-color: aqua !important;">    
+                                    <a class="button is-outlined">
+                                        <span class="icon">
+                                            <i class="fa fa-th fa-rotate-90" aria-hidden="true"></i>
+                                        </span>
+                                        <span>取説</span>
+                                        <input style="cursor: hand" class="file-input" onclick="location.href='https://google.co.jp/'">
+                                    </a>
+                               </span>
+                                <span class="navbar-item" v-if="isHttpReq" v-for="csvBtn in csvPathList">
+                                    <a class="button is-outlined">
+                                        <span class="icon">
+                                            <i class="fa fa-th fa-rotate-90" aria-hidden="true"></i>
+                                        </span>
+                                        <span>{{csvBtn.btnName}}</span>
+                                        <input style="cursor: hand" class="file-input"
+                                            @click="RequestCsvPath(csvBtn.csvPath)">
+                                    </a>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </nav>
+            </div>
+
+            <div style="padding: 20px;" class="container has-text-centered" v-if="csvCols.length > 0">
+                <div class="discription">
+                    <p>最大３つまで条件を指定できます。左から順番に使ってください。バグったら更新してやり直してみて下さい。<br>使用していかなる損害が発生しても作者は責任を負いかねます。ほか、免責事項については取説をよく読み、公式サイトが発する情報に注意して使用して下さい。</p>
+                    </div>
+
+                <div class="field is-grouped">
+                    <p class="control">
+                        <span class="select">
+                            <select v-model="selectedCol_1">
+                                <option v-for="col in csvCols">{{col}}</option>
+                            </select>
+                        </span>
+                    </p>
+                    <p class="control is-expanded">
+                        <input v-model="searchKeyword_1" @keydown.enter="SearchBoxEnterkey"
+                            placeholder="左で列を設定して検索するキーワードを入力してください" class="input" type="text">
+                    </p>
+                    <p class="control">
+                        <span class="select">
+                            <select v-model="selectedCol_2">
+                                <option v-for="col in csvCols">{{col}}</option>
+                            </select>
+                        </span>
+                    </p>
+                    <p class="control is-expanded">
+                        <input v-model="searchKeyword_2" @keydown.enter="SearchBoxEnterkey"
+                            placeholder="左で列を設定して検索するキーワードを入力してください" class="input" type="text">
+                    </p>
+                    <p class="control">
+                        <span class="select">
+                            <select v-model="selectedCol_3">
+                                <option v-for="col in csvCols">{{col}}</option>
+                            </select>
+                        </span>
+                    </p>
+                    <p class="control is-expanded_3">
+                        <input v-model="searchKeyword_3" @keydown.enter="SearchBoxEnterkey"
+                            placeholder="左で列を設定して検索するキーワードを入力してください" class="input" type="text">
+                    </p>
+                    <p class="control">
+                        <a class="button is-info" @click="ColSearch">
+                            Search
+                        </a>
+                    </p>
+                </div>
+            </div>
+
+
+            <!-- <div class="hero-body"> -->
+            <div class="container" style="padding: 0 20px 0 20px;">
+                <div class="control has-text-right">
+                    <label v-if="csvData.length > 0">
+                        {{csvData.length}} 件
+                    </label>
+                </div>
+
+                <div class="container table-container has-text-centered">
+                    <table class="table is-bordered is-striped is-narrow is-hoverable is-fullwidth">
+                        <thead>
+                            <tr>
+                                <th v-for="col in csvCols"> {{col}} </th>
+                            </tr>
+                        </thead>
+                        <tbody v-for="row in csvData">
+                            <tr>
+                                <td v-for="(col, index) in csvCols">{{row[index]}}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.5.16/dist/vue.js"></script>
+    <script>
+        let vueApp = new Vue({
+            el: '#app',
+            data: {
+                isMenuOpen: false,
+                isHttpReq: false,
+                csvTitle: null,
+                csvCols: [],
+                csvData: [],
+                allCsvData: [],
+                selectedCol_1: null,
+                selectedCol_2: null,
+                selectedCol_3: null,
+                searchKeyword_1: null,
+                searchKeyword_2: null,
+                searchKeyword_3: null,
+                numSearchMode: false,
+                numSearchCondition: 'eq',
+                numSearchParams: ['eq', 'gt', 'le'],
+                searchNumMode: false,
+                csvPathList: [
+                    { btnName: '宿泊施設', csvPath: 'csv/hotel.csv' },
+                    { btnName: '旅行会社', csvPath: 'csv/agt.csv' },
+                    { btnName: '店舗', csvPath: 'csv/shop.csv' }
+
+                ]
+            },
+
+            methods: {
+                OpenDialog: function (csvEv) {
+                    let file = csvEv.target.files[0];
+                    this.csvTitle = file.name;
+                    let reader = new FileReader();
+                    let vueThis = this;
+                    reader.onload = function (inputCsv) {
+                        const res = inputCsv.target.result;
+                        vueThis.ConvertCsv(res);
+                    }
+                    reader.readAsText(file, "Shift_JIS");
+                },
+                RequestCsvPath: function (csvPath) {
+                    const vueThis = this;
+                    new Promise((resolve, reject) => {
+                        var httpReq = new XMLHttpRequest(); // HTTPでファイルを読み込むためのXMLHttpRrequestオブジェクトを生成、サーバと非同期通信するためのAPI
+                        httpReq.open("get", csvPath, true); // アクセスするファイルを指定
+                        httpReq.overrideMimeType('text/plain; charset=Shift_JIS');
+                        httpReq.onload = () => {
+                            vueThis.csvTitle = csvPath;
+                            resolve(vueThis.ConvertCsv(httpReq.responseText));
+                        };
+                        httpReq.onerror = () => {
+                            reject(new Error(httpReq.statusText));
+                        };
+                        httpReq.send(null); // HTTPリクエストの発行
+                    });
+                    //// Shift-JISが上手くいかないので保留
+                    // Papa.parse(csvPath, {
+                    //     // header: true,
+                    //     encoding: 'Shift-JIS',
+                    //     download: true,
+                    //     dynamicTyping: true,
+                    //     complete: function (results) {
+                    //         vueThis.csvCols = results.data[0];
+                    //         vueThis.selectedCol = vueThis.csvCols[0];
+                    //         vueThis.csvData = results.data.slice(1);
+                    //         vueThis.allCsvData = results.data.slice(1);
+                    //     }
+                    // });
+                },
+                ConvertCsv: function (csvData) {
+                    const vueThis = this;
+                    Papa.parse(csvData, {
+                        complete: function (results) {
+                            vueThis.csvCols = results.data[0];
+                            vueThis.selectedCol = vueThis.csvCols[0];
+                            vueThis.csvData = results.data.slice(1);
+                            vueThis.allCsvData = results.data.slice(1);
+                            // console.log(results);
+                        }
+                    });
+                },
+                ColSearch: function () {
+                    if (!this.selectedCol) { return }
+                    if (this.searchKeyword_1 == '' && this.searchKeyword_2 == '' && this.searchKeyword_3 == "") {
+                        this.csvData = this.allCsvData;
+                        return;
+                    }
+                    if (this.numSearchMode) {
+                        this.SearchNum();
+                    } else {
+                        this.SearchWord();
+                    }
+                },
+
+
+                //３個and検索するようにいじってみた。
+                SearchWord: function () {
+                    const vueThis = this;
+                    const colIndex_1 = vueThis.csvCols.indexOf(vueThis.selectedCol_1);
+                    const colIndex_2 = vueThis.csvCols.indexOf(vueThis.selectedCol_2);
+                    const colIndex_3 = vueThis.csvCols.indexOf(vueThis.selectedCol_3);
+
+                    this.csvData = this.allCsvData.filter(function (item, index) {
+                        if (!item[colIndex_1] && !item[colIndex_2] && !item[colIndex_3]) {
+                            return false;
+                        }
+                        if(!item[colIndex_2] && !item[colIndex_3]){
+                            if (item[colIndex_1].includes(vueThis.searchKeyword_1)) {
+                                return true;
+                            }
+                        }
+                        if(!item[colIndex_3]){
+                            if (item[colIndex_1].includes(vueThis.searchKeyword_1) && item[colIndex_2].includes(vueThis.searchKeyword_2) ) {
+                                return true;
+                            }
+                        }
+                        else {
+                            if (item[colIndex_1].includes(vueThis.searchKeyword_1) && item[colIndex_2].includes(vueThis.searchKeyword_2) && item[colIndex_3].includes(vueThis.searchKeyword_3)) {
+                                return true;
+                            }
+                        }
+                        
+                    });
+                    console.log(this.csvData);
+                },
+                SearchNum: function () {
+                    const vueThis = this;
+                    const colIndex = vueThis.csvCols.indexOf(vueThis.selectedCol);
+                    this.csvData = this.allCsvData.filter(function (item, index) {
+                        if (!item[colIndex]) { return false; }
+
+                        const targetWord = item[colIndex].replace(/['"]+/g, '');
+                        console.log(targetWord);
+                        switch (vueThis.numSearchCondition) {
+                        //１つ目のBox
+                            case vueThis.numSearchParams[0]: //eq
+                                if (targetWord == vueThis.searchKeyword_1) {
+                                    return true;
+                                }
+                                break;
+                            case vueThis.numSearchParams[1]: //gt
+                                if (targetWord >= vueThis.searchKeyword_1) {
+                                    return true;
+                                }
+                                break;
+                            case vueThis.numSearchParams[2]: //le
+                                if (targetWord <= vueThis.searchKeyword_1) {
+                                    return true;
+                                }
+                                break;
+
+                            //２つ目のbox
+                            case vueThis.numSearchParams[0]: //eq
+                                if (targetWord == vueThis.searchKeyword_2) {
+                                    return true;
+                                }
+                                break;
+                            case vueThis.numSearchParams[1]: //gt
+                                if (targetWord >= vueThis.searchKeyword_2) {
+                                    return true;
+                                }
+                                break;
+                            case vueThis.numSearchParams[2]: //le
+                                if (targetWord <= vueThis.searchKeyword_2) {
+                                    return true;
+                                }
+                                break;
+
+
+                            //３つ目のbox
+                            case vueThis.numSearchParams[0]: //eq
+                                if (targetWord == vueThis.searchKeyword_3) {
+                                    return true;
+                                }
+                                break;
+                            case vueThis.numSearchParams[1]: //gt
+                                if (targetWord >= vueThis.searchKeyword_3) {
+                                    return true;
+                                }
+                                break;
+                            case vueThis.numSearchParams[2]: //le
+                                if (targetWord <= vueThis.searchKeyword_3) {
+                                    return true;
+                                }
+                                break;
+                            default:
+                                return false;
+                        }
+                    });
+                    console.log(this.csvData);
+                },
+
+                SearchBoxEnterkey: function (event) {
+                    // 日本語入力中のEnterキー操作は無効にする
+                    if (event.keyCode !== 13) { return }
+                    this.ColSearch();
+                }
+            },
+
+            mounted: function () {
+                if (location.href.indexOf('file') != -1) {
+                    this.isHttpReq = true;
+                    setTimeout(function () {
+                        alert('ローカルの場合はImportボタンからCSVを開いてください');
+                    }.bind(this), 500);
+                    return
+                } else {
+                    this.isHttpReq = true;
+                }
+                if (this.csvPathList) {
+                    this.RequestCsvPath(this.csvPathList[0].csvPath);
+                }
+            }
+
+        })
+
+    </script>
+    <style type="text/css">
+        html,
+        body {
+            font-family: 'Open Sans';
+        }
+    </style>
+</body>
+
+</html>

@@ -1,0 +1,27 @@
+.field.is-grouped {
+    display: contents;
+}
+
+.hero-head {
+    font-size: 65%;
+}
+
+.container .has-text-centered{
+    font-size: 65%;
+}
+
+.control select{
+    width: 100%;
+}
+
+.select{
+    width: 100%;
+}
+
+.control {
+    width: 100%;
+}
+
+.is-expanded{
+    margin-bottom: 10px !important;
+}
